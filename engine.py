@@ -4,7 +4,7 @@ And determining legal moves.
 """
 
 
-class GameState():
+class GameState:
     def __init__(self):
         self.board = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
@@ -264,9 +264,11 @@ class GameState():
                                         self.whites_turn == False and self.board[y + i + 1][x + i + 1][0] == "w"):
                                     moves.append([(y, x), (y + i + 1, x + i + 1)])
                                     break
-                        if (self.whites_turn == True and self.board[y + i][x + i][0] == "b") or (
+                        elif (self.whites_turn == True and self.board[y + i][x + i][0] == "b") or (
                                 self.whites_turn == False and self.board[y + i][x + i][0] == "w"):
                             moves.append([(y, x), (y + i, x + i)])
+                            break
+                        else:
                             break
                 if k < 0:
                     for i in range(-1, k - 1, -1):
@@ -277,9 +279,11 @@ class GameState():
                                         self.whites_turn == False and self.board[y + i - 1][x + i - 1][0] == "w"):
                                     moves.append([(y, x), (y + i - 1, x + i - 1)])
                                     break
-                        if (self.whites_turn == True and self.board[y + i][x + i][0] == "b") or (
+                        elif (self.whites_turn == True and self.board[y + i][x + i][0] == "b") or (
                                 self.whites_turn == False and self.board[y + i][x + i][0] == "w"):
                             moves.append([(y, x), (y + i, x + i)])
+                            break
+                        else:
                             break
             if 0 <= y + k <= 7 and 0 <= x - k <= 7:
                 if k > 0:
@@ -291,9 +295,11 @@ class GameState():
                                         self.whites_turn == False and self.board[y + i + 1][x - i - 1][0] == "w"):
                                     moves.append([(y, x), (y + i + 1, x - i - 1)])
                                     break
-                        if (self.whites_turn == True and self.board[y + i][x - i][0] == "b") or (
+                        elif (self.whites_turn == True and self.board[y + i][x - i][0] == "b") or (
                                 self.whites_turn == False and self.board[y + i][x - i][0] == "w"):
                             moves.append([(y, x), (y + i, x - i)])
+                            break
+                        else:
                             break
                 if k < 0:
                     for i in range(-1, k - 1, -1):
@@ -304,9 +310,11 @@ class GameState():
                                         self.whites_turn == False and self.board[y + i - 1][x - i + 1][0] == "w"):
                                     moves.append([(y, x), (y + i - 1, x - i + 1)])
                                     break
-                        if (self.whites_turn == True and self.board[y + i][x - i][0] == "b") or (
+                        elif (self.whites_turn == True and self.board[y + i][x - i][0] == "b") or (
                                 self.whites_turn == False and self.board[y + i][x - i][0] == "w"):
                             moves.append([(y, x), (y + i, x - i)])
+                            break
+                        else:
                             break
 
     def get_queen_moves(self, y, x, moves):  # Just both rook and bishop moves.
@@ -443,10 +451,8 @@ class GameState():
         if len(moves) == 0:  # If no valid moves to make it's either stalemate or checkmate.
             if self.get_in_check():
                 self.check_mate = True
-                print("Checkmate")
             else:
                 self.stale_mate = True
-                print("Stale Mate")
         return moves
 
     def spaces_attacked(self):  # Generates all opponents moves
@@ -464,3 +470,9 @@ class GameState():
                 return True
         return False
 
+    def get_piece_moves(self, click, legal_moves):  # Input 1 selected piece and gives a list of possible final pos.
+        piece_moves = []
+        for move in legal_moves:
+            if move[0] == click:
+                piece_moves.append(move[1])
+        return piece_moves
