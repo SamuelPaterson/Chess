@@ -50,8 +50,6 @@ class GameState:
         else:
             self.board[end_row][end_col] = moved_piece
 
-        self.whites_turn = not self.whites_turn
-
         if moved_piece == "wK":  # Updating the kings position and if castling it moves the rook.
             self.w_king = (end_row, end_col)
             self.w_king_moved = self.w_king_moved + 1
@@ -93,6 +91,7 @@ class GameState:
             if moved_piece[0] == "b":
                 self.board[end_row - 1][end_col] = ".."
 
+        self.whites_turn = not self.whites_turn
         self.history.append(clicks)
         self.moved_pieces.append(moved_piece)
         self.captured_pieces.append(captured_piece)
@@ -333,10 +332,11 @@ class GameState:
                                 moves.append([(y, x), (y + r, x + c)])
                 else:
                     for c in range(-1, 2):
-                        if (self.whites_turn == True and self.board[y + r][x + c][0] == "b") or (
-                                self.whites_turn == False and self.board[y + r][x + c][0] == "w") or (
-                                self.board[y + r][x + c] == ".."):
-                            moves.append([(y, x), (y + r, x + c)])
+                        if 0 <= x + c <= 7:
+                            if (self.whites_turn == True and self.board[y + r][x + c][0] == "b") or (
+                                    self.whites_turn == False and self.board[y + r][x + c][0] == "w") or (
+                                    self.board[y + r][x + c] == ".."):
+                                moves.append([(y, x), (y + r, x + c)])
 
     def get_pawn_moves(self, y, x, moves):
         if self.board[y][x][0] == "w":

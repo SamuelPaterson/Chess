@@ -3,6 +3,7 @@ Handles all graphics and user input.
 """
 import pygame as pg
 from engine import *
+from AI import *
 
 # Define board and spaces sizes
 width = height = 512
@@ -13,8 +14,6 @@ dark_squares = [47, 130, 255]  # RGB Colour for the dark squares.
 Initialize dictionary of images
 '''
 images = {}
-
-
 def load_images():
     pieces = ["bR", "bN", "bB", "bQ", "bK", "bP", "wR", "wN", "wB", "wQ", "wK", "wP"]
     for piece in pieces:
@@ -26,14 +25,12 @@ def load_images():
 '''
 Class for all my buttons
 '''
-
-
 class Button:
     def __init__(self, screen, x, y, text, button_width, button_height):
         self.screen = screen
         self.box = pg.Rect(x + 5, y + 5, button_width - 10, button_height - 10)
         self.outside_box = pg.Rect(x, y, button_width, button_height)
-        self.font = pg.font.SysFont("arial.ttf", 30, False, False)
+        self.font = pg.font.SysFont("arial.ttf", 22, False, False)
         self.text_display = self.font.render(text, False, pg.Color('Black'))
         self.text_location = pg.Rect(x, y, button_width, button_height).move(
             button_width / 2 - self.text_display.get_width() / 2,
@@ -67,7 +64,9 @@ def main():
     legal_moves = gs.all_check_checker()  # List of all legal moves after checking for checks, for every piece.
     piece_moves = []  # List of all legal moves for the selected piece.
     game_over = False
-    start_screen = True
+    AI_select_screen = True
+    colour_select_screen = False
+    player_turn = True
 
     clicked_square = ()  # Last user click
     clicks = []  # Tracks the past 2 clicks
@@ -78,38 +77,57 @@ def main():
             if e.type == pg.QUIT:
                 run = False
 
-            if start_screen:
-                player_colour = game_start(screen, gs, piece_moves)
+            if AI_select_screen:
+                AI_playing = AI_select(screen, gs, piece_moves)
+                if AI_playing != "No Input Yet":
+                    if AI_playing != 0:  # AKA Chose player picked a computer to play against
+                        AI_select_screen = False
+                        colour_select_screen = True
+                    else:
+                        AI_select_screen = False
+
+            elif colour_select_screen:
+                player_colour = colour_select(screen, gs, piece_moves)
                 if player_colour == "w":
-                    start_screen = False
+                    player_turn = True
+                    colour_select_screen = False
                 elif player_colour == "b":
-                    start_screen = False
+                    player_turn = False
+                    colour_select_screen = False
             else:
                 if not game_over:
-                    if e.type == pg.MOUSEBUTTONDOWN:  # Mouse Inputs
-                        location = pg.mouse.get_pos()
-                        x = int(location[0] // square_size)
-                        y = int(location[1] // square_size)
-                        if clicked_square == (y, x):  # If same square selected reset
-                            clicked_square = ()
-                            piece_moves = []
-                            clicks = []
-                        else:
-                            clicked_square = (y, x)
-                            clicks.append(clicked_square)
-                        if len(clicks) == 1:  # Player selects a piece
-                            piece_moves = gs.get_piece_moves(clicked_square,
-                                                             legal_moves)  # A list of all legal pos for selected piece
-                            if len(piece_moves) == 0:  # AKA No legal moves for that piece
+                    if player_turn:
+                        if e.type == pg.MOUSEBUTTONDOWN:  # Mouse Inputs
+                            location = pg.mouse.get_pos()
+                            x = int(location[0] // square_size)
+                            y = int(location[1] // square_size)
+                            if clicked_square == (y, x):  # If same square selected reset
+                                clicked_square = ()
+                                piece_moves = []
                                 clicks = []
-                        elif len(clicks) == 2:  # Player makes a move.
-                            if clicks in legal_moves:  # Checks if its legal.
-                                gs.make_move(clicks)
-                                legal_moves = gs.all_check_checker()
-                            clicks = []
-                            piece_moves = []
+                            else:
+                                clicked_square = (y, x)
+                                clicks.append(clicked_square)
+                            if len(clicks) == 1:  # Player selects a piece
+                                piece_moves = gs.get_piece_moves(clicked_square,
+                                                                 legal_moves)  # A list of all legal pos for selected piece
+                                if len(piece_moves) == 0:  # AKA No legal moves for that piece
+                                    clicks = []
+                            elif len(clicks) == 2:  # Player makes a move.
+                                if clicks in legal_moves:  # Checks if its legal.
+                                    gs.make_move(clicks)
+                                    legal_moves = gs.all_check_checker()
+                                    if AI_playing != 0:
+                                        player_turn = False
+                                clicks = []
+                                piece_moves = []
+                    elif not player_turn:
+                        if AI_playing == 1:
+                            gs.make_move(get_random_move(legal_moves))
+                            legal_moves = gs.all_check_checker()
+                            player_turn = True
 
-                    elif e.type == pg.KEYDOWN:  # Key inputs
+                    if e.type == pg.KEYDOWN:  # Key inputs
                         if e.key == pg.K_LEFT:  # Undo Currently not working
                             gs.undo()
                             legal_moves = gs.all_check_checker()
@@ -122,7 +140,7 @@ def main():
                 legal_moves = gs.all_check_checker()
                 piece_moves = []
                 game_over = False
-                start_screen = True
+                AI_select_screen = True
                 clicked_square = ()
                 clicks = []
 
@@ -161,7 +179,27 @@ def draw_game(screen, gs, piece_moves):
         screen.blit(images["cross"], (y * square_size, x * square_size))
 
 
-def game_start(screen, gs, piece_moves):
+def AI_select(screen, gs, piece_moves):
+    AI = "No Input Yet"
+    none_ai_button = Button(screen, 1 * square_size, 5 * square_size, "No Computer", square_size * 2, square_size)
+    random_ai_button = Button(screen, 5 * square_size, 5 * square_size, "Random Move", square_size * 2, square_size)
+    draw_game(screen, gs, piece_moves)
+
+    font = pg.font.SysFont("arial.ttf", 55, False, False)
+    text_display = font.render("Pick a computer", False, pg.Color('Grey'))
+    text_location = pg.Rect(0, 0, width, height).move(width / 2 - text_display.get_width() / 2,
+                                                      0.375 * height - text_display.get_height() / 2)
+    pg.draw.rect(screen, pg.Color("Black"), pg.Rect(0, 0.25 * height, width, 0.25 * height))
+    screen.blit(text_display, text_location)
+
+    if none_ai_button.draw():
+        AI = 0
+    if random_ai_button.draw():
+        AI = 1
+    return AI
+
+
+def colour_select(screen, gs, piece_moves):
     player_colour = "None"
     white_button = Button(screen, 1 * square_size, 5 * square_size, "White", square_size * 2, square_size)
     black_button = Button(screen, 5 * square_size, 5 * square_size, "Black", square_size * 2, square_size)
